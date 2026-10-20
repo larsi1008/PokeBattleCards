@@ -7,7 +7,6 @@
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <style>
     :root {
-      /* MOBILE OPTIMIERTE ABMESSUNGEN */
       --card-w: 68px;
       --card-h: 95px;
       --arena-card-w: 110px;
@@ -28,7 +27,7 @@
 
     * {
       box-sizing: border-box;
-      touch-action: manipulation;
+      touch-action: none;
     }
 
     html, body {
@@ -70,6 +69,7 @@
       position: relative;
       max-height: 95dvh;
       overflow-y: auto;
+      touch-action: auto;
     }
 
     .avatar-carousel {
@@ -138,6 +138,7 @@
       justify-content: center;
       align-items: center;
       z-index: 200;
+      touch-action: auto;
     }
 
     input {
@@ -152,6 +153,7 @@
       color: #fff;
       font-weight: bold;
       letter-spacing: 1px;
+      touch-action: auto;
     }
 
     button {
@@ -166,6 +168,7 @@
       margin: 4px;
       box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
       transition: all 0.2s;
+      touch-action: auto;
     }
 
     button.btn-green {
@@ -242,7 +245,7 @@
       font-size: 14px;
     }
 
-    /* BATTLEFIELD MOBILE-LAYOUT FIXES */
+    /* BATTLEFIELD */
     #game {
       display: flex;
       flex-direction: column;
@@ -282,7 +285,6 @@
     .opp-avatar-pos { top: 4px; left: 4px; border-color: #ef4444; box-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
     .my-avatar-pos { bottom: 4px; right: 4px; }
 
-    /* GEGNER HAND NÄHER NACH OBEN PUSHEM */
     #opp-hand {
       height: calc(var(--card-h) + 5px);
       margin-top: -10px;
@@ -291,9 +293,10 @@
     }
 
     #my-hand {
-      height: calc(var(--card-h) + 15px);
+      height: calc(var(--card-h) + 20px);
       margin-bottom: -5px;
       align-items: flex-end;
+      position: relative;
     }
 
     .hand-fan-container {
@@ -306,16 +309,23 @@
     .fan-card-wrapper {
       position: relative;
       margin: 0 -14px;
-      transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), margin 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-      cursor: pointer;
       transform-origin: bottom center;
+      cursor: grab;
+      will-change: transform;
+      transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), margin 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
-    .fan-card-wrapper:hover {
-      transform: translateY(-18px) scale(1.15) rotate(0deg) !important;
-      margin: 0 10px !important;
+    .fan-card-wrapper:not(.dragging):hover {
+      transform: translateY(-22px) scale(1.18) rotate(0deg) !important;
+      margin: 0 8px !important;
       z-index: 100 !important;
-      box-shadow: 0 10px 25px rgba(56, 189, 248, 0.6);
+      box-shadow: 0 12px 28px rgba(56, 189, 248, 0.6);
+    }
+
+    .fan-card-wrapper.dragging {
+      cursor: grabbing;
+      z-index: 1000 !important;
+      transition: none !important;
     }
 
     .card-img, .card-back {
@@ -325,12 +335,14 @@
       object-fit: cover;
       box-shadow: 0 4px 10px rgba(0,0,0,0.6);
       display: block;
+      pointer-events: none;
     }
 
     .hand-flip-container {
       width: var(--card-w);
       height: var(--card-h);
       perspective: 1000px;
+      pointer-events: none;
     }
 
     .hand-flip-inner {
@@ -356,7 +368,7 @@
       100% { opacity: 1; }
     }
 
-    /* ARENA VERGRÖSSERN & MEHR PLATZ BINDEN */
+    /* ARENA MIT RUNDEN COUNTER */
     .arena {
       flex: 1;
       margin: 2px 0;
@@ -370,6 +382,44 @@
       align-items: center;
       position: relative;
       overflow: hidden;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .arena.drag-active {
+      border-color: #38bdf8;
+      background: rgba(56, 189, 248, 0.15) !important;
+    }
+
+    .arena-center-divider {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1px;
+      margin: 1px 0;
+    }
+
+    .round-counter-badge {
+      font-size: 11px;
+      font-family: sans-serif;
+      font-weight: 800;
+      color: #38bdf8;
+      background: rgba(15, 23, 42, 0.8);
+      padding: 2px 8px;
+      border-radius: 10px;
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      letter-spacing: 0.5px;
+    }
+
+    .matchpoint-badge {
+      color: #f59e0b !important;
+      border-color: #f59e0b !important;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+      animation: pulseMatch 1s infinite alternate;
+    }
+
+    @keyframes pulseMatch {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.1); }
     }
 
     .shockwave {
@@ -427,16 +477,11 @@
       perspective: 1000px;
     }
 
-    .arena-slot.drag-over {
-      border-color: #38bdf8;
-      background: rgba(56, 189, 248, 0.25);
-    }
-
     .flip-card-wrapper {
       width: var(--arena-card-w);
       height: var(--arena-card-h);
       perspective: 1000px;
-      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.6s ease;
+      transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.5s ease;
     }
 
     .fly-to-arena { animation: flyCardIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
@@ -451,10 +496,10 @@
       width: 100%;
       height: 100%;
       transform-style: preserve-3d;
-      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .flip-card-inner.flipped { transform: rotateY(180deg); }
+    .flip-card-inner.flipped { transform: rotateY(180deg) !important; }
 
     .card-face {
       position: absolute;
@@ -469,13 +514,31 @@
     .card-face-back { transform: rotateY(0deg); }
     .card-face-front { transform: rotateY(180deg); }
 
+    /* REPARIERTE IMPACT ANIMATIONEN OHNE RE-ROTATION BUG */
+    .clash-opp { animation: clashOppImpact 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+    .clash-my { animation: clashMyImpact 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+
+    @keyframes clashOppImpact {
+      0% { transform: translateY(0) scale(1); }
+      30% { transform: translateY(-15px) scale(0.95); }
+      60% { transform: translateY(55px) scale(1.2); }
+      100% { transform: translateY(0) scale(1); }
+    }
+
+    @keyframes clashMyImpact {
+      0% { transform: translateY(0) scale(1); }
+      30% { transform: translateY(15px) scale(0.95); }
+      60% { transform: translateY(-55px) scale(1.2); }
+      100% { transform: translateY(0) scale(1); }
+    }
+
     .exit-my-card {
-      transform: translate(200px, 100px) rotate(25deg) scale(0.5) !important;
+      transform: translate(220px, 120px) rotate(35deg) scale(0.3) !important;
       opacity: 0 !important;
     }
 
     .exit-opp-card {
-      transform: translate(-200px, -100px) rotate(-25deg) scale(0.5) !important;
+      transform: translate(-220px, -120px) rotate(-35deg) scale(0.3) !important;
       opacity: 0 !important;
     }
 
@@ -534,19 +597,6 @@
       30%, 50%, 70% { transform: translate(-10px, 8px) rotate(-2deg); }
       40%, 60% { transform: translate(10px, -8px) rotate(2deg); }
     }
-
-    .clash-opp { animation: clashOpp 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) 2 alternate; }
-    .clash-my { animation: clashMy 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) 2 alternate; }
-
-    @keyframes clashOpp {
-      0% { transform: rotateY(180deg) translateY(0) scale(1); }
-      100% { transform: rotateY(180deg) translateY(35px) scale(1.15); }
-    }
-
-    @keyframes clashMy {
-      0% { transform: rotateY(180deg) translateY(0) scale(1); }
-      100% { transform: rotateY(180deg) translateY(-35px) scale(1.15); }
-    }
   </style>
 </head>
 <body id="body">
@@ -581,7 +631,7 @@
       <button class="btn-secondary" onclick="openSettingsModal()">⚙️ Einstellungen</button>
     </div>
 
-    <div class="version-tag">Version 1.2.1</div>
+    <div class="version-tag">Version 1.6.1 (Impact Fix & Reveal)</div>
   </div>
 
   <!-- STATS MODAL -->
@@ -678,15 +728,18 @@
       <div id="shockwave-effect" class="shockwave"></div>
 
       <div class="slot-wrapper">
-        <div class="slot-label" style="color:#ef4444;" id="opp-score-label">Gegner (Punkte: 0)</div>
+        <div class="slot-label" style="color:#ef4444;" id="opp-score-label">Gegner (0)</div>
         <div id="opp-played" class="arena-slot"></div>
       </div>
 
-      <div style="font-size:16px; color:#ef4444; text-shadow:0 0 10px #ef4444; margin: 1px 0;">VS</div>
+      <div class="arena-center-divider">
+        <div id="round-counter" class="round-counter-badge">Runde 1/5</div>
+        <div style="font-size:14px; color:#ef4444; text-shadow:0 0 10px #ef4444;">VS</div>
+      </div>
 
       <div class="slot-wrapper">
-        <div id="my-played" class="arena-slot" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)"></div>
-        <div class="slot-label" style="color:#38bdf8;" id="my-score-label">Du (Punkte: 0)</div>
+        <div id="my-played" class="arena-slot"></div>
+        <div class="slot-label" style="color:#38bdf8;" id="my-score-label">Du (0)</div>
       </div>
     </div>
 
@@ -882,8 +935,10 @@
     let peer = null, conn = null, isHost = false;
     let myHand = [];
     let myScore = 0, oppScore = 0, currentRound = 0;
+    let maxRounds = 5;
     let mySubmittedCards = null, oppSubmittedCards = null;
-    let oppHandSize = 5, isEvaluating = false, draggedCardIndex = null;
+    let oppHandSize = 5, isEvaluating = false;
+    let hasDrawnExtraCards = false;
 
     let currentAvatarIndex = parseInt(localStorage.getItem("poke_avatar")) || 1;
     const maxAvatars = 7;
@@ -991,9 +1046,11 @@
       myScore = 0;
       oppScore = 0;
       currentRound = 0;
+      maxRounds = 5;
       oppHandSize = 5;
       mySubmittedCards = null;
       oppSubmittedCards = null;
+      hasDrawnExtraCards = false;
       updateScoreUI();
 
       document.getElementById('game-over-modal').style.display = 'none';
@@ -1026,9 +1083,11 @@
         myScore = 0;
         oppScore = 0;
         currentRound = 0;
+        maxRounds = 5;
         oppHandSize = 5;
         mySubmittedCards = null;
         oppSubmittedCards = null;
+        hasDrawnExtraCards = false;
 
         if (data.avatar) document.getElementById('opp-avatar-img').src = data.avatar;
         if (data.color) document.documentElement.style.setProperty('--opp-color', data.color);
@@ -1043,9 +1102,27 @@
         oppHandSize = Math.max(0, oppHandSize - oppSubmittedCards.length);
         renderOppHand();
 
-        document.getElementById('opp-played').innerHTML = createCardFlipHTML(oppSubmittedCards[0].img, true);
+        // GEGNERKARTE ABSOLUT VERDECKT ANLEGEN
+        document.getElementById('opp-played').innerHTML = createCardFlipHTML(oppSubmittedCards[0].img, true, false);
         playSound('deal');
         checkRoundEvaluation();
+      } else if (data.type === 'GIVE_EXTRA_CARDS') {
+        myHand.push(...data.cards);
+        oppHandSize += 2;
+        maxRounds = 7;
+        renderHand();
+        renderOppHand();
+
+        const banner = document.getElementById('banner-overlay');
+        banner.innerText = "+2 Extra Karten erhalten!";
+        banner.className = "show-info";
+
+        setTimeout(() => {
+          banner.className = "";
+          isEvaluating = false;
+          updateScoreUI();
+          document.getElementById('status').innerText = "Ziehe deine Karte in die Arena!";
+        }, 1800);
       } else if (data.type === 'LEAVE') {
         alert("Der Host hat das Spiel beendet.");
         location.reload();
@@ -1110,7 +1187,7 @@
 
           if (index === total - 1) {
             setTimeout(() => {
-              document.getElementById('status').innerText = "Wähle deine Karte!";
+              document.getElementById('status').innerText = "Ziehe deine Karte in die Arena!";
               renderHand();
               renderOppHand();
             }, 900);
@@ -1119,6 +1196,7 @@
       });
     }
 
+    /* PHYSIK & POINTER DRAGGING LOGIK */
     function renderHand() {
       const container = document.getElementById('my-hand');
       container.innerHTML = '';
@@ -1128,19 +1206,88 @@
         const wrapper = document.createElement('div');
         wrapper.className = 'fan-card-wrapper';
         
-        const rot = (index - (total - 1) / 2) * 6; 
-        wrapper.style.transform = `rotate(${rot}deg)`;
+        const baseRot = (index - (total - 1) / 2) * 6; 
+        wrapper.style.transform = `rotate(${baseRot}deg)`;
         wrapper.style.zIndex = total - index;
 
         const img = document.createElement('img');
         img.src = card.img;
         img.className = 'card-img';
 
-        wrapper.onclick = () => { if (!isEvaluating && !mySubmittedCards) playCard(index); };
-
         wrapper.appendChild(img);
         container.appendChild(wrapper);
+
+        setupCardPhysics(wrapper, index, baseRot);
       });
+    }
+
+    function setupCardPhysics(element, cardIndex, baseRot) {
+      let isDragging = false;
+      let startX = 0, startY = 0;
+      let currentX = 0, currentY = 0;
+      let lastX = 0, lastY = 0;
+      let velocityY = 0, velocityX = 0;
+
+      element.onpointerdown = (e) => {
+        if (isEvaluating || mySubmittedCards) return;
+        isDragging = true;
+        element.classList.add('dragging');
+        element.setPointerCapture(e.pointerId);
+
+        startX = e.clientX;
+        startY = e.clientY;
+        lastX = e.clientX;
+        lastY = e.clientY;
+        currentX = 0;
+        currentY = 0;
+        velocityX = 0;
+        velocityY = 0;
+
+        document.getElementById('arena-bg').classList.add('drag-active');
+      };
+
+      element.onpointermove = (e) => {
+        if (!isDragging) return;
+
+        velocityX = e.clientX - lastX;
+        velocityY = e.clientY - lastY;
+        lastX = e.clientX;
+        lastY = e.clientY;
+
+        currentX = e.clientX - startX;
+        currentY = e.clientY - startY;
+
+        const tiltRot = baseRot + Math.sign(velocityX) * Math.min(12, Math.abs(velocityX) * 0.5);
+        element.style.transform = `translate3d(${currentX}px, ${currentY}px, 0px) rotate(${tiltRot}deg) scale(1.1)`;
+      };
+
+      element.onpointerup = (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        element.classList.remove('dragging');
+        element.releasePointerCapture(e.pointerId);
+        document.getElementById('arena-bg').classList.remove('drag-active');
+
+        const arenaRect = document.getElementById('arena-bg').getBoundingClientRect();
+        const cardRect = element.getBoundingClientRect();
+
+        const droppedInArena = cardRect.top < arenaRect.bottom && cardRect.bottom > arenaRect.top;
+        const flickedUp = velocityY < -6 && currentY < -40;
+
+        if ((droppedInArena || flickedUp) && !mySubmittedCards && !isEvaluating) {
+          playCard(cardIndex);
+        } else {
+          element.style.transform = `rotate(${baseRot}deg)`;
+        }
+      };
+
+      element.onpointercancel = () => {
+        if (!isDragging) return;
+        isDragging = false;
+        element.classList.remove('dragging');
+        document.getElementById('arena-bg').classList.remove('drag-active');
+        element.style.transform = `rotate(${baseRot}deg)`;
+      };
     }
 
     function renderOppHand() {
@@ -1161,24 +1308,6 @@
       }
     }
 
-    function handleDragOver(e) {
-      e.preventDefault();
-      document.getElementById('my-played').classList.add('drag-over');
-    }
-
-    function handleDragLeave() {
-      document.getElementById('my-played').classList.remove('drag-over');
-    }
-
-    function handleDrop(e) {
-      e.preventDefault();
-      document.getElementById('my-played').classList.remove('drag-over');
-      if (draggedCardIndex !== null && !mySubmittedCards && !isEvaluating) {
-        playCard(draggedCardIndex);
-        draggedCardIndex = null;
-      }
-    }
-
     function playCard(index) {
       if (isEvaluating || mySubmittedCards) return;
 
@@ -1187,7 +1316,8 @@
       myHand = myHand.filter((_, i) => i !== index);
       renderHand();
 
-      document.getElementById('my-played').innerHTML = createCardFlipHTML(mySubmittedCards[0].img, true);
+      // MEINE KARTE OFFEN NEBEN MIR ANLEGEN
+      document.getElementById('my-played').innerHTML = createCardFlipHTML(mySubmittedCards[0].img, true, true);
       document.getElementById('status').innerText = "Warte auf Gegner...";
 
       if (conn && conn.open) {
@@ -1197,10 +1327,10 @@
       checkRoundEvaluation();
     }
 
-    function createCardFlipHTML(frontImgSrc, animate = false) {
+    function createCardFlipHTML(frontImgSrc, animate = false, isFlipped = false) {
       return `
         <div class="flip-card-wrapper ${animate ? 'fly-to-arena' : ''}">
-          <div class="flip-card-inner">
+          <div class="flip-card-inner ${isFlipped ? 'flipped' : ''}">
             <img src="backside.png" class="card-face card-face-back">
             <img src="${frontImgSrc}" class="card-face card-face-front">
           </div>
@@ -1211,9 +1341,27 @@
     function updateScoreUI(popTarget = null) {
       const myLabel = document.getElementById('my-score-label');
       const oppLabel = document.getElementById('opp-score-label');
+      const roundBadge = document.getElementById('round-counter');
 
       myLabel.innerText = `${myPlayerName} (${myScore})`;
       oppLabel.innerText = `${oppPlayerName} (${oppScore})`;
+
+      const remainingRounds = maxRounds - currentRound;
+      const myDiff = myScore - oppScore;
+      const oppDiff = oppScore - myScore;
+
+      let isMatchpoint = false;
+      if (myDiff > remainingRounds || oppDiff > remainingRounds || (currentRound + 1 === maxRounds)) {
+        isMatchpoint = true;
+      }
+
+      if (isMatchpoint) {
+        roundBadge.innerText = "MATCHPOINT!";
+        roundBadge.classList.add('matchpoint-badge');
+      } else {
+        roundBadge.innerText = `Runde ${currentRound + 1}/${maxRounds}`;
+        roundBadge.classList.remove('matchpoint-badge');
+      }
 
       if (popTarget === 'my') {
         myLabel.classList.add('score-pop');
@@ -1235,22 +1383,22 @@
         const myCardInner = document.querySelector('#my-played .flip-card-inner');
         const oppCardInner = document.querySelector('#opp-played .flip-card-inner');
 
+        // SCHRITT 1: MEINE KARTE OFFEN, GEGNER VERDECKT. START DES ANSTURMS!
         setTimeout(() => {
-          if (myCardInner) myCardInner.classList.add('flipped');
-          playSound('flip');
-          document.getElementById('status').innerText = "Angriff!";
-        }, 600);
-
-        setTimeout(() => {
-          if (oppCardInner) oppCardInner.classList.add('flipped');
-          playSound('flip');
-
           if (myCardInner) myCardInner.classList.add('clash-my');
           if (oppCardInner) oppCardInner.classList.add('clash-opp');
-          document.getElementById('body').classList.add('shake');
-          playSound('clash');
-        }, 1600);
+          document.getElementById('status').innerText = "Angriff!";
+        }, 500);
 
+        // SCHRITT 2: EXAKT IM MOMENT DES IMPACTS (960ms) DECKT SICH DIE GEGNERKARTE DYNAMISCH AUF!
+        setTimeout(() => {
+          if (oppCardInner) oppCardInner.classList.add('flipped');
+          document.getElementById('body').classList.add('shake');
+          playSound('flip');
+          playSound('clash');
+        }, 960);
+
+        // SCHRITT 3: PUNKTE BEWERTEN & BANNER ANZEIGEN
         setTimeout(() => {
           let myAtk = mySubmittedCards[0].atk;
           let oppAtk = oppSubmittedCards[0].atk;
@@ -1276,16 +1424,18 @@
           }
 
           updateScoreUI(popTarget);
-        }, 1900);
+        }, 1500);
 
+        // SCHRITT 4: ANIMATIONS-CLEANUP
         setTimeout(() => {
           document.getElementById('body').classList.remove('shake');
           document.getElementById('banner-overlay').className = "";
 
           if (myCardWrapper) myCardWrapper.classList.add('exit-my-card');
           if (oppCardWrapper) oppCardWrapper.classList.add('exit-opp-card');
-        }, 3600);
+        }, 3200);
 
+        // SCHRITT 5: NÄCHSTE RUNDE ODER EXTRA-KARTEN DRAW
         setTimeout(() => {
           document.getElementById('my-played').innerHTML = '';
           document.getElementById('opp-played').innerHTML = '';
@@ -1293,38 +1443,44 @@
           mySubmittedCards = null;
           oppSubmittedCards = null;
 
-          if (currentRound % 2 === 0) {
-            const randomCard = pokemonPool[Math.floor(Math.random() * pokemonPool.length)];
-            myHand.push(randomCard);
-            oppHandSize += 1;
+          if (!hasDrawnExtraCards && myHand.length === 1 && oppHandSize === 1) {
+            hasDrawnExtraCards = true;
 
-            renderHand();
-            renderOppHand();
+            if (isHost) {
+              const c1 = pokemonPool[Math.floor(Math.random() * pokemonPool.length)];
+              const c2 = pokemonPool[Math.floor(Math.random() * pokemonPool.length)];
 
-            const banner = document.getElementById('banner-overlay');
-            banner.innerText = "Zufällige Karte erhalten!";
-            banner.className = "show-info";
+              myHand.push(c1, c2);
+              oppHandSize += 2;
+              maxRounds = 7;
 
-            setTimeout(() => {
-              banner.className = "";
-              isEvaluating = false;
-              
-              if (myHand.length > 0) {
-                document.getElementById('status').innerText = "Nächste Runde!";
-              } else {
-                showMatchEndModal();
-              }
-            }, 1800);
+              renderHand();
+              renderOppHand();
+
+              conn.send({ type: 'GIVE_EXTRA_CARDS', cards: [c1, c2] });
+
+              const banner = document.getElementById('banner-overlay');
+              banner.innerText = "+2 Extra Karten erhalten!";
+              banner.className = "show-info";
+
+              setTimeout(() => {
+                banner.className = "";
+                isEvaluating = false;
+                updateScoreUI();
+                document.getElementById('status').innerText = "Ziehe deine Karte in die Arena!";
+              }, 1800);
+            }
           } else {
             isEvaluating = false;
 
-            if (myHand.length > 0) {
-              document.getElementById('status').innerText = "Nächste Runde!";
+            if (myHand.length > 0 && (myScore <= maxRounds / 2 && oppScore <= maxRounds / 2)) {
+              updateScoreUI();
+              document.getElementById('status').innerText = "Ziehe deine Karte in die Arena!";
             } else {
               showMatchEndModal();
             }
           }
-        }, 4300);
+        }, 3800);
       }
     }
 
