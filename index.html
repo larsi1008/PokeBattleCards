@@ -2,26 +2,27 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Pokémon Battlefield Duell</title>
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <style>
     :root {
-      --card-w: 90px;
-      --card-h: 126px;
-      --arena-card-w: 130px;
-      --arena-card-h: 182px;
+      /* MOBILE-OPTIMIERTE SKALIERUNG */
+      --card-w: 70px;
+      --card-h: 98px;
+      --arena-card-w: 95px;
+      --arena-card-h: 133px;
 
       --my-color: #0284c7;
       --opp-color: #7f1d1d;
     }
 
-    @media (min-height: 750px) {
+    @media (min-height: 700px) {
       :root {
-        --card-w: 105px;
-        --card-h: 147px;
-        --arena-card-w: 150px;
-        --arena-card-h: 210px;
+        --card-w: 90px;
+        --card-h: 126px;
+        --arena-card-w: 125px;
+        --arena-card-h: 175px;
       }
     }
 
@@ -33,12 +34,12 @@
     html, body {
       margin: 0;
       padding: 0;
-      width: 100vw;
-      height: 100vh;
+      width: 100%;
+      height: 100%;
+      height: 100dvh; /* DYNAMIC VIEWPORT HEIGHT GEGEN ABSCHNEIDEN AM HANDY */
       overflow: hidden;
     }
 
-    /* LOBBY HINTERGRUND: NUR EIGENE FARBE */
     body {
       font-family: 'Impact', 'Segoe UI', sans-serif;
       color: #ffffff;
@@ -50,7 +51,6 @@
       transition: background 0.6s ease;
     }
 
-    /* KAMPF HINTERGRUND: GEGNER FARBE OBEN, EIGENE FARBE UNTEN */
     body.in-game {
       background: linear-gradient(180deg, var(--opp-color) 0%, #0f172a 50%, var(--my-color) 100%) !important;
     }
@@ -60,15 +60,15 @@
       background: #1e293b;
       border: 2px solid #38bdf8;
       border-radius: 16px;
-      padding: 24px 20px 20px 20px;
+      padding: 20px 16px;
       max-width: 420px;
-      width: 90%;
+      width: 92%;
       margin: auto;
       box-shadow: 0 0 30px rgba(56, 189, 248, 0.3);
       font-family: sans-serif;
       z-index: 200;
       position: relative;
-      max-height: 90vh;
+      max-height: 95dvh;
       overflow-y: auto;
     }
 
@@ -84,7 +84,7 @@
       background: #0f172a;
       border: 2px solid #38bdf8;
       color: #38bdf8;
-      font-size: 20px;
+      font-size: 18px;
       width: 36px;
       height: 36px;
       border-radius: 50%;
@@ -96,15 +96,12 @@
       box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
     }
 
-    .arrow-btn:hover {
-      background: #38bdf8;
-      color: #020617;
-    }
+    .arrow-btn:hover { background: #38bdf8; color: #020617; }
 
     .avatar-preview {
-      width: 75px;
-      height: 75px;
-      border-radius: 16px;
+      width: 70px;
+      height: 70px;
+      border-radius: 14px;
       border: 3px solid #38bdf8;
       box-shadow: 0 0 18px rgba(56, 189, 248, 0.6);
       object-fit: cover;
@@ -129,7 +126,7 @@
     .color-swatch.active {
       border-color: #ffffff;
       box-shadow: 0 0 12px #ffffff;
-      transform: scale(1.1);
+      transform: scale(1.08);
     }
 
     .modal-overlay {
@@ -149,7 +146,7 @@
       border-radius: 8px;
       border: 2px solid #38bdf8;
       text-align: center;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
       width: 90%;
       background: #0f172a;
       color: #fff;
@@ -166,7 +163,7 @@
       font-size: 16px;
       font-weight: bold;
       cursor: pointer;
-      margin: 5px;
+      margin: 4px;
       box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
       transition: all 0.2s;
     }
@@ -183,15 +180,10 @@
       box-shadow: 0 4px 10px rgba(56, 189, 248, 0.15);
     }
 
-    button.btn-secondary:hover {
-      background: #38bdf8;
-      color: #020617;
-    }
-
+    button.btn-secondary:hover { background: #38bdf8; color: #020617; }
     button:hover { transform: translateY(-2px); }
     button:disabled { background: #475569; cursor: not-allowed; transform: none; box-shadow: none; }
 
-    /* MENU BUTTON GRID UNTER DEM BETRETEN BUTTON */
     .menu-sub-btns {
       display: flex;
       gap: 10px;
@@ -201,65 +193,62 @@
 
     .menu-sub-btns button {
       flex: 1;
-      padding: 10px 14px;
-      font-size: 14px;
+      padding: 10px;
+      font-size: 13px;
       margin: 0;
+    }
+
+    .version-tag {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 12px;
+      font-family: sans-serif;
     }
 
     /* STATISTIK TABELLE */
     .stats-summary {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-bottom: 15px;
+      gap: 8px;
+      margin-bottom: 12px;
       background: #0f172a;
       padding: 10px;
       border-radius: 10px;
       border: 1px solid #334155;
     }
 
-    .stat-card {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .stat-val { font-size: 20px; font-weight: bold; color: #38bdf8; }
-    .stat-lbl { font-size: 11px; color: #94a3b8; text-transform: uppercase; }
+    .stat-card { display: flex; flex-direction: column; align-items: center; }
+    .stat-val { font-size: 18px; font-weight: bold; color: #38bdf8; }
+    .stat-lbl { font-size: 10px; color: #94a3b8; text-transform: uppercase; }
 
     .stats-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 13px;
-      margin-top: 10px;
+      font-size: 12px;
+      margin-top: 8px;
       text-align: left;
     }
 
-    .stats-table th, .stats-table td {
-      padding: 8px 6px;
-      border-bottom: 1px solid #334155;
-    }
+    .stats-table th, .stats-table td { padding: 6px 4px; border-bottom: 1px solid #334155; }
+    .stats-table th { color: #38bdf8; text-transform: uppercase; font-size: 10px; }
 
-    .stats-table th { color: #38bdf8; text-transform: uppercase; font-size: 11px; }
-
-    /* EINSTELLUNGEN MODAL ELEMENTS */
     .settings-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 12px 0;
+      padding: 10px 0;
       border-bottom: 1px solid #334155;
       color: #cbd5e1;
-      font-size: 15px;
+      font-size: 14px;
     }
 
-    /* BATTLEFIELD */
+    /* BATTLEFIELD STABLE HEIGHT */
     #game {
       display: flex;
       flex-direction: column;
-      height: 100vh;
+      height: 100dvh;
       justify-content: space-between;
-      padding: 10px;
+      padding: 6px;
       position: relative;
       background: transparent !important;
     }
@@ -268,71 +257,62 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      background: rgba(15, 23, 42, 0.7);
+      background: rgba(15, 23, 42, 0.75);
       backdrop-filter: blur(8px);
-      padding: 8px 18px;
+      padding: 6px 14px;
       border-radius: 12px;
       border: 1px solid rgba(255, 255, 255, 0.15);
       font-family: sans-serif;
       z-index: 5;
     }
 
-    .status-text { color: #38bdf8; font-size: 16px; font-weight: bold; }
+    .status-text { color: #38bdf8; font-size: 14px; font-weight: bold; }
 
     .trainer-avatar {
-      width: 54px;
-      height: 54px;
-      border-radius: 14px;
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
       border: 2px solid #38bdf8;
-      box-shadow: 0 0 12px rgba(56, 189, 248, 0.5);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
       object-fit: cover;
       position: absolute;
       z-index: 10;
     }
 
-    .opp-avatar-pos {
-      top: 10px;
-      left: 10px;
-      border-color: #ef4444;
-      box-shadow: 0 0 12px rgba(239, 68, 68, 0.5);
-    }
-
-    .my-avatar-pos {
-      bottom: 10px;
-      right: 10px;
-    }
+    .opp-avatar-pos { top: 6px; left: 6px; border-color: #ef4444; box-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
+    .my-avatar-pos { bottom: 6px; right: 6px; }
 
     .hand-fan-container {
-      height: calc(var(--card-h) + 40px);
+      height: calc(var(--card-h) + 20px);
       display: flex;
       justify-content: center;
       align-items: flex-end;
-      padding-bottom: 10px;
+      padding-bottom: 4px;
       perspective: 1000px;
       background: transparent !important;
     }
 
     .fan-card-wrapper {
       position: relative;
-      margin: 0 -18px;
+      margin: 0 -14px;
       transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), margin 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-      cursor: grab;
+      cursor: pointer;
       transform-origin: bottom center;
     }
 
     .fan-card-wrapper:hover {
-      transform: translateY(-30px) scale(1.2) rotate(0deg) !important;
-      margin: 0 15px !important;
+      transform: translateY(-20px) scale(1.15) rotate(0deg) !important;
+      margin: 0 10px !important;
       z-index: 100 !important;
-      box-shadow: 0 15px 35px rgba(56, 189, 248, 0.6);
+      box-shadow: 0 10px 25px rgba(56, 189, 248, 0.6);
     }
 
     .card-img, .card-back {
       width: var(--card-w);
       height: var(--card-h);
-      border-radius: 10px;
+      border-radius: 8px;
       object-fit: cover;
-      box-shadow: 0 6px 14px rgba(0,0,0,0.6);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.6);
       display: block;
     }
 
@@ -356,30 +336,29 @@
     .deal-from-center-opp { animation: dealOpp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
 
     @keyframes dealMy {
-      0% { transform: translateY(-250px) scale(0.3) rotate(0deg); opacity: 0; }
+      0% { transform: translateY(-200px) scale(0.3) rotate(0deg); opacity: 0; }
       100% { opacity: 1; }
     }
 
     @keyframes dealOpp {
-      0% { transform: translateY(250px) scale(0.3) rotate(0deg); opacity: 0; }
+      0% { transform: translateY(200px) scale(0.3) rotate(0deg); opacity: 0; }
       100% { opacity: 1; }
     }
 
     .arena {
       flex: 1;
-      margin: 10px 0;
+      margin: 6px 0;
       background: rgba(15, 23, 42, 0.45) !important;
       backdrop-filter: blur(6px);
       border: 2px dashed rgba(255, 255, 255, 0.25);
-      border-radius: 20px;
+      border-radius: 16px;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      gap: 8px;
+      gap: 4px;
       position: relative;
       overflow: hidden;
-      transition: border-color 0.5s ease, box-shadow 0.3s ease;
     }
 
     .shockwave {
@@ -400,49 +379,46 @@
     .shockwave.active-lose { animation: explodeWaveLose 0.5s ease-out forwards; }
 
     @keyframes explodeWaveWin {
-      0% { transform: translate(-50%, -50%) scale(0); opacity: 1; border-color: #38bdf8; box-shadow: 0 0 20px #38bdf8; }
-      100% { transform: translate(-50%, -50%) scale(25); opacity: 0; border-color: #22c55e; box-shadow: 0 0 50px #22c55e; }
+      0% { transform: translate(-50%, -50%) scale(0); opacity: 1; border-color: #38bdf8; }
+      100% { transform: translate(-50%, -50%) scale(25); opacity: 0; border-color: #22c55e; }
     }
 
     @keyframes explodeWaveLose {
-      0% { transform: translate(-50%, -50%) scale(0); opacity: 1; border-color: #ef4444; box-shadow: 0 0 20px #ef4444; }
-      100% { transform: translate(-50%, -50%) scale(25); opacity: 0; border-color: #dc2626; box-shadow: 0 0 50px #dc2626; }
+      0% { transform: translate(-50%, -50%) scale(0); opacity: 1; border-color: #ef4444; }
+      100% { transform: translate(-50%, -50%) scale(25); opacity: 0; border-color: #dc2626; }
     }
 
     .slot-wrapper {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 4px;
+      gap: 2px;
     }
 
     .slot-label {
-      font-size: 15px;
+      font-size: 13px;
       font-weight: 900;
       letter-spacing: 1px;
       font-family: sans-serif;
       text-transform: uppercase;
-      transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
-    .slot-label.score-pop { transform: scale(1.4); }
+    .slot-label.score-pop { transform: scale(1.3); }
 
     .arena-slot {
       width: var(--arena-card-w);
       height: var(--arena-card-h);
       border: 2px dashed rgba(255, 255, 255, 0.3);
-      border-radius: 12px;
+      border-radius: 10px;
       display: flex;
       justify-content: center;
       align-items: center;
       perspective: 1000px;
-      transition: background 0.2s, border-color 0.2s;
     }
 
     .arena-slot.drag-over {
       border-color: #38bdf8;
       background: rgba(56, 189, 248, 0.25);
-      box-shadow: 0 0 20px rgba(56, 189, 248, 0.5);
     }
 
     .flip-card-wrapper {
@@ -455,7 +431,7 @@
     .fly-to-arena { animation: flyCardIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
 
     @keyframes flyCardIn {
-      0% { transform: translateY(120px) scale(0.6); opacity: 0; }
+      0% { transform: translateY(80px) scale(0.6); opacity: 0; }
       100% { transform: translateY(0) scale(1); opacity: 1; }
     }
 
@@ -474,21 +450,21 @@
       top: 0; left: 0;
       width: 100%; height: 100%;
       backface-visibility: hidden;
-      border-radius: 12px;
+      border-radius: 10px;
       object-fit: cover;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.7);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.7);
     }
 
     .card-face-back { transform: rotateY(0deg); }
     .card-face-front { transform: rotateY(180deg); }
 
     .exit-my-card {
-      transform: translate(250px, 150px) rotate(25deg) scale(0.6) !important;
+      transform: translate(200px, 100px) rotate(25deg) scale(0.5) !important;
       opacity: 0 !important;
     }
 
     .exit-opp-card {
-      transform: translate(-250px, -150px) rotate(-25deg) scale(0.6) !important;
+      transform: translate(-200px, -100px) rotate(-25deg) scale(0.5) !important;
       opacity: 0 !important;
     }
 
@@ -497,55 +473,55 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%) scale(0);
-      font-size: 44px;
-      letter-spacing: 3px;
+      font-size: 32px;
+      letter-spacing: 2px;
       text-transform: uppercase;
       font-weight: 900;
-      padding: 18px 36px;
-      border-radius: 20px;
+      padding: 14px 28px;
+      border-radius: 16px;
       z-index: 100;
       pointer-events: none;
       transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      text-shadow: 0 5px 15px rgba(0,0,0,0.8);
+      text-shadow: 0 4px 10px rgba(0,0,0,0.8);
     }
 
     #banner-overlay.show-win {
       transform: translate(-50%, -50%) scale(1);
       background: linear-gradient(135deg, #22c55e, #15803d);
       color: #fff;
-      box-shadow: 0 0 50px #22c55e;
+      box-shadow: 0 0 40px #22c55e;
     }
 
     #banner-overlay.show-lose {
       transform: translate(-50%, -50%) scale(1);
       background: linear-gradient(135deg, #ef4444, #b91c1c);
       color: #fff;
-      box-shadow: 0 0 50px #ef4444;
+      box-shadow: 0 0 40px #ef4444;
     }
 
     #banner-overlay.show-draw {
       transform: translate(-50%, -50%) scale(1);
       background: linear-gradient(135deg, #eab308, #ca8a04);
       color: #fff;
-      box-shadow: 0 0 50px #eab308;
+      box-shadow: 0 0 40px #eab308;
     }
 
     #banner-overlay.show-info {
       transform: translate(-50%, -50%) scale(1);
       background: linear-gradient(135deg, #38bdf8, #0284c7);
       color: #fff;
-      box-shadow: 0 0 50px #38bdf8;
-      font-size: 24px;
+      box-shadow: 0 0 40px #38bdf8;
+      font-size: 20px;
     }
 
     .shake { animation: shakeScreen 0.45s cubic-bezier(.36,.07,.19,.97) both; }
 
     @keyframes shakeScreen {
       0%, 100% { transform: translate(0, 0); }
-      10%, 90% { transform: translate(-10px, 8px) rotate(-1deg); }
-      20%, 80% { transform: translate(12px, -8px) rotate(1deg); }
-      30%, 50%, 70% { transform: translate(-12px, 10px) rotate(-2deg); }
-      40%, 60% { transform: translate(12px, -10px) rotate(2deg); }
+      10%, 90% { transform: translate(-8px, 6px) rotate(-1deg); }
+      20%, 80% { transform: translate(10px, -6px) rotate(1deg); }
+      30%, 50%, 70% { transform: translate(-10px, 8px) rotate(-2deg); }
+      40%, 60% { transform: translate(10px, -8px) rotate(2deg); }
     }
 
     .clash-opp { animation: clashOpp 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) 2 alternate; }
@@ -553,12 +529,12 @@
 
     @keyframes clashOpp {
       0% { transform: rotateY(180deg) translateY(0) scale(1); }
-      100% { transform: rotateY(180deg) translateY(55px) scale(1.25); }
+      100% { transform: rotateY(180deg) translateY(45px) scale(1.2); }
     }
 
     @keyframes clashMy {
       0% { transform: rotateY(180deg) translateY(0) scale(1); }
-      100% { transform: rotateY(180deg) translateY(-55px) scale(1.25); }
+      100% { transform: rotateY(180deg) translateY(-45px) scale(1.2); }
     }
   </style>
 </head>
@@ -568,7 +544,7 @@
 
   <!-- LOBBY SCREEN -->
   <div id="lobby" class="lobby-box">
-    <h1 style="color:#38bdf8; margin-top:4px; margin-bottom: 2px;">Pokémon Duell</h1>
+    <h1 style="color:#38bdf8; margin-top:2px; margin-bottom: 2px;">Pokémon Duell</h1>
     
     <p style="margin-bottom:4px; color:#cbd5e1; font-size:13px;">Dein Trainer-Name:</p>
     <input type="text" id="player-name-input" placeholder="Ash Ketchum" maxlength="15">
@@ -587,13 +563,14 @@
     <input type="text" id="room-code" placeholder="pika" value="pika">
     <br>
     
-    <button id="join-btn" onclick="startCustomRoom()" style="width: 100%; margin: 8px 0 0 0;">Spiel Betreten</button>
+    <button id="join-btn" onclick="startCustomRoom()" style="width: 100%; margin: 6px 0 0 0;">Spiel Betreten</button>
 
-    <!-- SAUBERES SUB-MENÜ FÜR STATISTIKEN & EINSTELLUNGEN -->
     <div class="menu-sub-btns">
       <button class="btn-secondary" onclick="openStatsModal()">📊 Statistiken</button>
       <button class="btn-secondary" onclick="openSettingsModal()">⚙️ Einstellungen</button>
     </div>
+
+    <div class="version-tag">Version 1.2.0</div>
   </div>
 
   <!-- STATS MODAL -->
@@ -616,10 +593,10 @@
         </div>
       </div>
 
-      <p style="margin: 5px 0; font-size:14px; color:#cbd5e1;">Gesamt Win-Rate: <b id="stat-winrate" style="color:#38bdf8;">0%</b></p>
+      <p style="margin: 4px 0; font-size:13px; color:#cbd5e1;">Gesamt Win-Rate: <b id="stat-winrate" style="color:#38bdf8;">0%</b></p>
       
-      <h4 style="color:#38bdf8; margin: 15px 0 5px 0; text-align:left;">Gegner-Historie:</h4>
-      <div style="max-height: 180px; overflow-y: auto;">
+      <h4 style="color:#38bdf8; margin: 12px 0 4px 0; text-align:left;">Gegner-Historie:</h4>
+      <div style="max-height: 160px; overflow-y: auto;">
         <table class="stats-table">
           <thead>
             <tr>
@@ -694,7 +671,7 @@
         <div id="opp-played" class="arena-slot"></div>
       </div>
 
-      <div style="font-size:20px; color:#ef4444; text-shadow:0 0 10px #ef4444; margin: 2px 0;">VS</div>
+      <div style="font-size:18px; color:#ef4444; text-shadow:0 0 10px #ef4444; margin: 2px 0;">VS</div>
 
       <div class="slot-wrapper">
         <div id="my-played" class="arena-slot" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)"></div>
@@ -946,7 +923,7 @@
 
       const joinBtn = document.getElementById('join-btn');
       joinBtn.disabled = true;
-      joinBtn.innerText = "Warte auf Mitspieler...";
+      joinBtn.innerText = "Verbinde...";
 
       const hostPeerId = "poke-room-" + roomInput;
       peer = new Peer(hostPeerId);
@@ -981,7 +958,6 @@
         document.getElementById('game-over-modal').style.display = 'none';
         document.getElementById('game').style.display = 'flex';
 
-        // SWAP HINTERGRUND AUF DUALEN KAMPF-FARBVERLAUF
         document.body.classList.add('in-game');
 
         const myAvatar = `trainer_${currentAvatarIndex}.png`;
@@ -996,6 +972,7 @@
 
         if (isHost) startHostGame();
       });
+
       conn.on('data', data => handleMessage(data));
     }
 
@@ -1004,6 +981,8 @@
       oppScore = 0;
       currentRound = 0;
       oppHandSize = 5;
+      mySubmittedCards = null;
+      oppSubmittedCards = null;
       updateScoreUI();
 
       document.getElementById('game-over-modal').style.display = 'none';
@@ -1037,6 +1016,9 @@
         oppScore = 0;
         currentRound = 0;
         oppHandSize = 5;
+        mySubmittedCards = null;
+        oppSubmittedCards = null;
+
         if (data.avatar) document.getElementById('opp-avatar-img').src = data.avatar;
         if (data.color) document.documentElement.style.setProperty('--opp-color', data.color);
         if (data.name) oppPlayerName = data.name;
@@ -1046,9 +1028,11 @@
         myHand = data.hand;
         animateDealingCards();
       } else if (data.type === 'PLAY_CARDS') {
+        // SICHERE DATEN-ÜBERTRAGUNG UND RENDER-FIX
         oppSubmittedCards = data.cards;
-        oppHandSize -= oppSubmittedCards.length;
+        oppHandSize = Math.max(0, oppHandSize - oppSubmittedCards.length);
         renderOppHand();
+
         document.getElementById('opp-played').innerHTML = createCardFlipHTML(oppSubmittedCards[0].img, true);
         playSound('deal');
         checkRoundEvaluation();
@@ -1141,10 +1125,9 @@
         const img = document.createElement('img');
         img.src = card.img;
         img.className = 'card-img';
-        img.draggable = true;
 
-        img.ondragstart = () => { draggedCardIndex = index; };
-        img.onclick = () => { if (!isEvaluating && !mySubmittedCards) playCard(index); };
+        // TOUCH & CLICK OPTIMIERUNG FÜR MOBIL
+        wrapper.onclick = () => { if (!isEvaluating && !mySubmittedCards) playCard(index); };
 
         wrapper.appendChild(img);
         container.appendChild(wrapper);
@@ -1188,6 +1171,8 @@
     }
 
     function playCard(index) {
+      if (isEvaluating || mySubmittedCards) return;
+
       playSound('deal');
       mySubmittedCards = [myHand[index]];
       myHand = myHand.filter((_, i) => i !== index);
@@ -1195,7 +1180,11 @@
 
       document.getElementById('my-played').innerHTML = createCardFlipHTML(mySubmittedCards[0].img, true);
       document.getElementById('status').innerText = "Warte auf Gegner...";
-      conn.send({ type: 'PLAY_CARDS', cards: mySubmittedCards });
+
+      // SICHERE SENDUNG
+      if (conn && conn.open) {
+        conn.send({ type: 'PLAY_CARDS', cards: mySubmittedCards });
+      }
 
       checkRoundEvaluation();
     }
