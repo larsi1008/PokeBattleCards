@@ -1,0 +1,1590 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Pokémon 4-Slot Duell</title>
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <style>
+    :root {
+      --card-w: 60px;
+      --card-h: 84px;
+      --arena-card-w: 68px;
+      --arena-card-h: 95px;
+
+      --my-color: #0284c7;
+      --opp-color: #7f1d1d;
+    }
+
+    @media (min-height: 720px) {
+      :root {
+        --card-w: 72px;
+        --card-h: 100px;
+        --arena-card-w: 80px;
+        --arena-card-h: 112px;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      touch-action: none;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: 'Impact', 'Segoe UI', sans-serif;
+      color: #ffffff;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+      background: linear-gradient(180deg, #0f172a 0%, var(--my-color) 100%) !important;
+      transition: background 0.6s ease;
+    }
+
+    body.in-game {
+      background: linear-gradient(180deg, var(--opp-color) 0%, #0f172a 50%, var(--my-color) 100%) !important;
+    }
+
+    /* LOBBY & MODALS */
+    .lobby-box {
+      background: #1e293b;
+      border: 2px solid #38bdf8;
+      border-radius: 16px;
+      padding: 20px 16px;
+      max-width: 420px;
+      width: 92%;
+      margin: auto;
+      box-shadow: 0 0 30px rgba(56, 189, 248, 0.3);
+      font-family: sans-serif;
+      z-index: 200;
+      position: relative;
+      max-height: 95dvh;
+      overflow-y: auto;
+      touch-action: auto;
+    }
+
+    .avatar-carousel {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      margin: 8px 0 10px 0;
+    }
+
+    .arrow-btn {
+      background: #0f172a;
+      border: 2px solid #38bdf8;
+      color: #38bdf8;
+      font-size: 18px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+    }
+
+    .arrow-btn:hover { background: #38bdf8; color: #020617; }
+
+    .avatar-preview {
+      width: 70px;
+      height: 70px;
+      border-radius: 14px;
+      border: 3px solid #38bdf8;
+      box-shadow: 0 0 18px rgba(56, 189, 248, 0.6);
+      object-fit: cover;
+    }
+
+    .color-picker-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin: 8px 0 12px 0;
+    }
+
+    .color-swatch {
+      height: 30px;
+      border-radius: 6px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      cursor: pointer;
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .color-swatch:hover { transform: scale(1.1); }
+    .color-swatch.active {
+      border-color: #ffffff;
+      box-shadow: 0 0 12px #ffffff;
+      transform: scale(1.08);
+    }
+
+    .modal-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(2, 6, 23, 0.88);
+      backdrop-filter: blur(10px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 200;
+      touch-action: auto;
+    }
+
+    input {
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 2px solid #38bdf8;
+      text-align: center;
+      margin-bottom: 8px;
+      width: 90%;
+      background: #0f172a;
+      color: #fff;
+      font-weight: bold;
+      letter-spacing: 1px;
+      touch-action: auto;
+    }
+
+    button {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin: 4px;
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+      transition: all 0.2s;
+      touch-action: auto;
+    }
+
+    button.btn-green {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+    }
+
+    button.btn-secondary {
+      background: #0f172a;
+      border: 2px solid #38bdf8;
+      color: #38bdf8;
+      box-shadow: 0 4px 10px rgba(56, 189, 248, 0.15);
+    }
+
+    button.btn-secondary:hover { background: #38bdf8; color: #020617; }
+    button:hover { transform: translateY(-2px); }
+    button:disabled { background: #475569; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .menu-sub-btns {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 8px;
+    }
+
+    .menu-sub-btns button {
+      flex: 1;
+      padding: 10px;
+      font-size: 13px;
+      margin: 0;
+    }
+
+    .version-tag {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 12px;
+      font-family: sans-serif;
+    }
+
+    /* STATISTIK TABELLE */
+    .stats-summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+      background: #0f172a;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid #334155;
+    }
+
+    .stat-card { display: flex; flex-direction: column; align-items: center; }
+    .stat-val { font-size: 18px; font-weight: bold; color: #38bdf8; }
+    .stat-lbl { font-size: 10px; color: #94a3b8; text-transform: uppercase; }
+
+    .stats-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      margin-top: 8px;
+      text-align: left;
+    }
+
+    .stats-table th, .stats-table td { padding: 6px 4px; border-bottom: 1px solid #334155; }
+    .stats-table th { color: #38bdf8; text-transform: uppercase; font-size: 10px; }
+
+    .settings-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #334155;
+      color: #cbd5e1;
+      font-size: 14px;
+    }
+
+    /* BATTLEFIELD */
+    #game {
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      justify-content: space-between;
+      padding: 4px;
+      position: relative;
+      background: transparent !important;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(8px);
+      padding: 4px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      font-family: sans-serif;
+      z-index: 5;
+    }
+
+    .status-text { color: #38bdf8; font-size: 13px; font-weight: bold; }
+
+    .trainer-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      border: 2px solid #38bdf8;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+      object-fit: cover;
+      position: absolute;
+      z-index: 10;
+    }
+
+    .opp-avatar-pos { top: 4px; left: 4px; border-color: #ef4444; box-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
+    .my-avatar-pos { bottom: 4px; right: 4px; }
+
+    #opp-hand {
+      height: calc(var(--card-h) + 5px);
+      margin-top: -10px;
+      margin-bottom: 2px;
+      align-items: flex-start;
+    }
+
+    #my-hand {
+      height: calc(var(--card-h) + 20px);
+      margin-bottom: -5px;
+      align-items: flex-end;
+      position: relative;
+    }
+
+    .hand-fan-container {
+      display: flex;
+      justify-content: center;
+      perspective: 1000px;
+      background: transparent !important;
+    }
+
+    .fan-card-wrapper {
+      position: relative;
+      margin: 0 -12px;
+      transform-origin: bottom center;
+      cursor: grab;
+      will-change: transform;
+      transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), margin 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .fan-card-wrapper:not(.dragging):hover {
+      transform: translateY(-22px) scale(1.18) rotate(0deg) !important;
+      margin: 0 8px !important;
+      z-index: 100 !important;
+      box-shadow: 0 12px 28px rgba(56, 189, 248, 0.6);
+    }
+
+    .fan-card-wrapper.dragging {
+      cursor: grabbing;
+      z-index: 1000 !important;
+      transition: none !important;
+    }
+
+    .card-img, .card-back {
+      width: var(--card-w);
+      height: var(--card-h);
+      border-radius: 6px;
+      object-fit: cover;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+      display: block;
+      pointer-events: none;
+    }
+
+    .hand-flip-container {
+      width: var(--card-w);
+      height: var(--card-h);
+      perspective: 1000px;
+      pointer-events: none;
+    }
+
+    .hand-flip-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .hand-flip-inner.flipped { transform: rotateY(180deg); }
+
+    .deal-from-center-my { animation: dealMy 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+    .deal-from-center-opp { animation: dealOpp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+
+    @keyframes dealMy {
+      0% { transform: translateY(-200px) scale(0.3) rotate(0deg); opacity: 0; }
+      100% { opacity: 1; }
+    }
+
+    @keyframes dealOpp {
+      0% { transform: translateY(200px) scale(0.3) rotate(0deg); opacity: 0; }
+      100% { opacity: 1; }
+    }
+
+    /* MULTI-SLOT ARENA SYSTEM */
+    .arena {
+      flex: 1;
+      margin: 2px 0;
+      background: rgba(15, 23, 42, 0.45) !important;
+      backdrop-filter: blur(6px);
+      border: 2px dashed rgba(255, 255, 255, 0.25);
+      border-radius: 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+      padding: 6px;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .arena.drag-active {
+      border-color: #38bdf8;
+      background: rgba(56, 189, 248, 0.15) !important;
+    }
+
+    .slots-row {
+      display: flex;
+      justify-content: space-evenly;
+      width: 100%;
+      gap: 4px;
+    }
+
+    .arena-center-divider {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 95%;
+      margin: 2px 0;
+    }
+
+    .score-badge {
+      font-size: 13px;
+      font-weight: 900;
+      font-family: sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .round-counter-badge {
+      font-size: 11px;
+      font-family: sans-serif;
+      font-weight: 800;
+      color: #38bdf8;
+      background: rgba(15, 23, 42, 0.8);
+      padding: 2px 8px;
+      border-radius: 10px;
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      letter-spacing: 0.5px;
+    }
+
+    .matchpoint-badge {
+      color: #f59e0b !important;
+      border-color: #f59e0b !important;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+      animation: pulseMatch 1s infinite alternate;
+    }
+
+    @keyframes pulseMatch {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.1); }
+    }
+
+    .shockwave {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 4px solid #38bdf8;
+      transform: translate(-50%, -50%) scale(0);
+      opacity: 1;
+      pointer-events: none;
+      z-index: 50;
+    }
+
+    .shockwave.active-win { animation: explodeWaveWin 0.5s ease-out forwards; }
+    .shockwave.active-lose { animation: explodeWaveLose 0.5s ease-out forwards; }
+
+    @keyframes explodeWaveWin {
+      0% { transform: translate(-50%, -50%) scale(0); opacity: 1; border-color: #38bdf8; }
+      100% { transform: translate(-50%, -50%) scale(25); opacity: 0; border-color: #22c55e; }
+    }
+
+    @keyframes explodeWaveLose {
+      0% { transform: translate(-50%, -50%) scale(0); opacity: 1; border-color: #ef4444; }
+      100% { transform: translate(-50%, -50%) scale(25); opacity: 0; border-color: #dc2626; }
+    }
+
+    .arena-slot {
+      width: var(--arena-card-w);
+      height: var(--arena-card-h);
+      border: 2px dashed rgba(255, 255, 255, 0.25);
+      border-radius: 8px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      perspective: 1000px;
+      position: relative;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .arena-slot.active-clash {
+      border-color: #f59e0b;
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.6);
+    }
+
+    .flip-card-wrapper {
+      width: var(--arena-card-w);
+      height: var(--arena-card-h);
+      perspective: 1000px;
+      transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.5s ease;
+    }
+
+    .fly-to-arena { animation: flyCardIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+    @keyframes flyCardIn {
+      0% { transform: translateY(60px) scale(0.6); opacity: 0; }
+      100% { transform: translateY(0) scale(1); opacity: 1; }
+    }
+
+    .flip-card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .flip-card-inner.flipped { transform: rotateY(180deg) !important; }
+
+    .card-face {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      backface-visibility: hidden;
+      border-radius: 8px;
+      object-fit: cover;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.7);
+    }
+
+    .card-face-back { transform: rotateY(0deg); }
+    .card-face-front { transform: rotateY(180deg); }
+
+    /* IMPACT ANIMATIONEN */
+    .clash-opp { animation: clashOppImpact 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+    .clash-my { animation: clashMyImpact 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+
+    @keyframes clashOppImpact {
+      0% { transform: translateY(0) scale(1); }
+      30% { transform: translateY(-10px) scale(0.95); }
+      60% { transform: translateY(35px) scale(1.15); }
+      100% { transform: translateY(0) scale(1); }
+    }
+
+    @keyframes clashMyImpact {
+      0% { transform: translateY(0) scale(1); }
+      30% { transform: translateY(10px) scale(0.95); }
+      60% { transform: translateY(-35px) scale(1.15); }
+      100% { transform: translateY(0) scale(1); }
+    }
+
+    .exit-my-card {
+      transform: translate(120px, 80px) rotate(35deg) scale(0.2) !important;
+      opacity: 0 !important;
+    }
+
+    .exit-opp-card {
+      transform: translate(-120px, -80px) rotate(-35deg) scale(0.2) !important;
+      opacity: 0 !important;
+    }
+
+    #banner-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      font-size: 26px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-weight: 900;
+      padding: 12px 24px;
+      border-radius: 14px;
+      z-index: 100;
+      pointer-events: none;
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      text-shadow: 0 4px 10px rgba(0,0,0,0.8);
+    }
+
+    #banner-overlay.show-win {
+      transform: translate(-50%, -50%) scale(1);
+      background: linear-gradient(135deg, #22c55e, #15803d);
+      color: #fff;
+      box-shadow: 0 0 40px #22c55e;
+    }
+
+    #banner-overlay.show-lose {
+      transform: translate(-50%, -50%) scale(1);
+      background: linear-gradient(135deg, #ef4444, #b91c1c);
+      color: #fff;
+      box-shadow: 0 0 40px #ef4444;
+    }
+
+    #banner-overlay.show-draw {
+      transform: translate(-50%, -50%) scale(1);
+      background: linear-gradient(135deg, #eab308, #ca8a04);
+      color: #fff;
+      box-shadow: 0 0 40px #eab308;
+    }
+
+    #banner-overlay.show-info {
+      transform: translate(-50%, -50%) scale(1);
+      background: linear-gradient(135deg, #38bdf8, #0284c7);
+      color: #fff;
+      box-shadow: 0 0 40px #38bdf8;
+      font-size: 17px;
+    }
+
+    .shake { animation: shakeScreen 0.45s cubic-bezier(.36,.07,.19,.97) both; }
+
+    @keyframes shakeScreen {
+      0%, 100% { transform: translate(0, 0); }
+      10%, 90% { transform: translate(-8px, 6px) rotate(-1deg); }
+      20%, 80% { transform: translate(10px, -6px) rotate(1deg); }
+      30%, 50%, 70% { transform: translate(-10px, 8px) rotate(-2deg); }
+      40%, 60% { transform: translate(10px, -8px) rotate(2deg); }
+    }
+  </style>
+</head>
+<body id="body">
+
+  <div id="banner-overlay">ROUND WIN!</div>
+
+  <!-- LOBBY SCREEN -->
+  <div id="lobby" class="lobby-box">
+    <h1 style="color:#38bdf8; margin-top:2px; margin-bottom: 2px;">Pokémon Duell</h1>
+    
+    <p style="margin-bottom:4px; color:#cbd5e1; font-size:13px;">Dein Trainer-Name:</p>
+    <input type="text" id="player-name-input" placeholder="Ash Ketchum" maxlength="15">
+
+    <p style="margin-bottom:4px; color:#cbd5e1; font-size:13px;">Wähle deinen Trainer:</p>
+    <div class="avatar-carousel">
+      <button class="arrow-btn" onclick="cycleAvatar(-1)">◀</button>
+      <img id="avatar-preview-img" src="trainer_1.png" class="avatar-preview">
+      <button class="arrow-btn" onclick="cycleAvatar(1)">▶</button>
+    </div>
+
+    <p style="margin-bottom:4px; color:#cbd5e1; font-size:13px;">Wähle deine Spielfeld-Farbe:</p>
+    <div class="color-picker-grid" id="color-grid"></div>
+
+    <p style="margin-bottom:4px; color:#cbd5e1; font-size:13px;">Raumcode (z.B. <b>pika</b>):</p>
+    <input type="text" id="room-code" placeholder="pika" value="pika">
+    <br>
+    
+    <button id="join-btn" onclick="startCustomRoom()" style="width: 100%; margin: 6px 0 0 0;">Spiel Betreten</button>
+
+    <div class="menu-sub-btns">
+      <button class="btn-secondary" onclick="openStatsModal()">📊 Statistiken</button>
+      <button class="btn-secondary" onclick="openSettingsModal()">⚙️ Einstellungen</button>
+    </div>
+
+    <div class="version-tag">Version 2.0.0 (4-Slot Match & Bonus Round)</div>
+  </div>
+
+  <!-- STATS MODAL -->
+  <div id="stats-modal" class="modal-overlay" style="display:none;">
+    <div class="lobby-box" style="max-width: 480px;">
+      <h2 style="color:#38bdf8; margin-top:0;">Deine Kampf-Statistiken</h2>
+      
+      <div class="stats-summary">
+        <div class="stat-card">
+          <span class="stat-val" id="stat-total">0</span>
+          <span class="stat-lbl">Spiele</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-val" style="color:#22c55e;" id="stat-wins">0</span>
+          <span class="stat-lbl">Siege</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-val" style="color:#ef4444;" id="stat-losses">0</span>
+          <span class="stat-lbl">Niederlagen</span>
+        </div>
+      </div>
+
+      <p style="margin: 4px 0; font-size:13px; color:#cbd5e1;">Gesamt Win-Rate: <b id="stat-winrate" style="color:#38bdf8;">0%</b></p>
+      
+      <h4 style="color:#38bdf8; margin: 12px 0 4px 0; text-align:left;">Gegner-Historie:</h4>
+      <div style="max-height: 160px; overflow-y: auto;">
+        <table class="stats-table">
+          <thead>
+            <tr>
+              <th>Gegner</th>
+              <th>S / N / U</th>
+              <th>Win-Rate</th>
+            </tr>
+          </thead>
+          <tbody id="stats-history-body"></tbody>
+        </table>
+      </div>
+
+      <br>
+      <button class="btn-green" onclick="closeStatsModal()">Schließen</button>
+      <button style="background: #334155; box-shadow: none;" onclick="resetStats()">Stats Zurücksetzen</button>
+    </div>
+  </div>
+
+  <!-- EINSTELLUNGEN MODAL -->
+  <div id="settings-modal" class="modal-overlay" style="display:none;">
+    <div class="lobby-box" style="max-width: 380px;">
+      <h2 style="color:#38bdf8; margin-top:0;">Einstellungen</h2>
+      
+      <div class="settings-row">
+        <span>Vollbildmodus</span>
+        <button class="btn-secondary" style="padding: 6px 12px; margin: 0; font-size: 13px;" onclick="toggleFullScreen()">Umschalten ⛶</button>
+      </div>
+
+      <div class="settings-row">
+        <span>Soundeffekte</span>
+        <button id="sound-toggle-btn" class="btn-green" style="padding: 6px 12px; margin: 0; font-size: 13px;" onclick="toggleSound()">Aktiviert 🔊</button>
+      </div>
+
+      <br>
+      <button class="btn-secondary" style="width:100%;" onclick="closeSettingsModal()">Schließen</button>
+    </div>
+  </div>
+
+  <!-- GAME OVER MODAL -->
+  <div id="game-over-modal" class="modal-overlay" style="display:none;">
+    <div class="lobby-box">
+      <h1 id="end-title" style="color:#38bdf8; margin-top:0;">SPIEL ENDE</h1>
+      <p id="end-desc" style="color:#cbd5e1; font-size: 18px;"></p>
+      
+      <div id="host-controls">
+        <button class="btn-green" onclick="restartMatch()">Erneut spielen</button>
+        <button onclick="leaveToLobby()">Spiel beenden</button>
+      </div>
+
+      <div id="client-wait" style="display:none; color:#38bdf8; font-weight:bold;">
+        Warte auf Host-Entscheidung...
+      </div>
+    </div>
+  </div>
+
+  <!-- BATTLEFIELD SCREEN -->
+  <div id="game" style="display:none;">
+    <img id="opp-avatar-img" src="trainer_1.png" class="trainer-avatar opp-avatar-pos">
+    <img id="my-avatar-img" src="trainer_1.png" class="trainer-avatar my-avatar-pos">
+
+    <div class="top-bar">
+      <div id="status" class="status-text">Karten werden ausgeteilt...</div>
+    </div>
+
+    <div id="opp-hand" class="hand-fan-container"></div>
+
+    <div class="arena" id="arena-bg">
+      <div id="shockwave-effect" class="shockwave"></div>
+
+      <!-- GEGNER SLOTS -->
+      <div class="slots-row">
+        <div id="opp-slot-0" class="arena-slot"></div>
+        <div id="opp-slot-1" class="arena-slot"></div>
+        <div id="opp-slot-2" class="arena-slot"></div>
+        <div id="opp-slot-3" class="arena-slot"></div>
+      </div>
+
+      <div class="arena-center-divider">
+        <div class="score-badge" style="color:#ef4444;" id="opp-score-label">Gegner (0)</div>
+        <div id="round-counter" class="round-counter-badge">Kampf 1/4</div>
+        <div class="score-badge" style="color:#38bdf8;" id="my-score-label">Du (0)</div>
+      </div>
+
+      <!-- MEINE SLOTS -->
+      <div class="slots-row">
+        <div id="my-slot-0" class="arena-slot"></div>
+        <div id="my-slot-1" class="arena-slot"></div>
+        <div id="my-slot-2" class="arena-slot"></div>
+        <div id="my-slot-3" class="arena-slot"></div>
+      </div>
+    </div>
+
+    <div id="my-hand" class="hand-fan-container"></div>
+  </div>
+
+  <script>
+    /* LOCAL STORAGE SYSTEM */
+    const STORAGE_KEY = "poke_duel_stats_v1";
+
+    function loadLocalStats() {
+      const data = localStorage.getItem(STORAGE_KEY);
+      if (data) return JSON.parse(data);
+      return { total: 0, wins: 0, losses: 0, draws: 0, opponents: {} };
+    }
+
+    function saveLocalStats(stats) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stats));
+    }
+
+    function recordMatchResult(oppName, result) {
+      if (!oppName) oppName = "Anonym";
+      let stats = loadLocalStats();
+      stats.total++;
+
+      if (!stats.opponents[oppName]) {
+        stats.opponents[oppName] = { wins: 0, losses: 0, draws: 0 };
+      }
+
+      if (result === 'WIN') {
+        stats.wins++;
+        stats.opponents[oppName].wins++;
+      } else if (result === 'LOSS') {
+        stats.losses++;
+        stats.opponents[oppName].losses++;
+      } else {
+        stats.draws++;
+        stats.opponents[oppName].draws++;
+      }
+
+      saveLocalStats(stats);
+    }
+
+    function openStatsModal() {
+      const stats = loadLocalStats();
+      document.getElementById('stat-total').innerText = stats.total;
+      document.getElementById('stat-wins').innerText = stats.wins;
+      document.getElementById('stat-losses').innerText = stats.losses;
+
+      const totalPlayed = stats.wins + stats.losses + stats.draws;
+      const winRate = totalPlayed > 0 ? Math.round((stats.wins / totalPlayed) * 100) : 0;
+      document.getElementById('stat-winrate').innerText = winRate + "%";
+
+      const tbody = document.getElementById('stats-history-body');
+      tbody.innerHTML = '';
+
+      const oppKeys = Object.keys(stats.opponents);
+      if (oppKeys.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#64748b;">Noch keine Duelle absolviert</td></tr>';
+      } else {
+        oppKeys.forEach(opp => {
+          const item = stats.opponents[opp];
+          const oppTotal = item.wins + item.losses + item.draws;
+          const oppWinRate = oppTotal > 0 ? Math.round((item.wins / oppTotal) * 100) : 0;
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><b>${opp}</b></td>
+            <td>${item.wins} / ${item.losses} / ${item.draws}</td>
+            <td><b style="color:${oppWinRate >= 50 ? '#22c55e' : '#ef4444'}">${oppWinRate}%</b></td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      document.getElementById('stats-modal').style.display = 'flex';
+    }
+
+    function closeStatsModal() {
+      document.getElementById('stats-modal').style.display = 'none';
+    }
+
+    function resetStats() {
+      if (confirm("Möchtest du wirklich alle Statistiken unwiderruflich löschen?")) {
+        localStorage.removeItem(STORAGE_KEY);
+        openStatsModal();
+      }
+    }
+
+    /* EINSTELLUNGEN SYSTEM */
+    let soundEnabled = true;
+
+    function openSettingsModal() {
+      document.getElementById('settings-modal').style.display = 'flex';
+    }
+
+    function closeSettingsModal() {
+      document.getElementById('settings-modal').style.display = 'none';
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      const btn = document.getElementById('sound-toggle-btn');
+      if (soundEnabled) {
+        btn.innerText = "Aktiviert 🔊";
+        btn.className = "btn-green";
+      } else {
+        btn.innerText = "Stumm 🔇";
+        btn.className = "";
+        btn.style.background = "#475569";
+      }
+    }
+
+    /* PRESET FARBEN */
+    const presetColors = [
+      { name: "Karmesin", hex: "#7f1d1d" },
+      { name: "Saphir", hex: "#0284c7" },
+      { name: "Smaragd", hex: "#065f46" },
+      { name: "Violett", hex: "#581c87" },
+      { name: "Bernstein", hex: "#7c2d12" },
+      { name: "Cyan", hex: "#0e7490" },
+      { name: "Magenta", hex: "#831843" },
+      { name: "Tiefgrau", hex: "#334155" }
+    ];
+
+    let selectedColor = localStorage.getItem("poke_color") || presetColors[1].hex;
+    let myPlayerName = localStorage.getItem("poke_name") || "Trainer " + Math.floor(Math.random()*900 + 100);
+    let oppPlayerName = "Gegner";
+
+    document.getElementById('player-name-input').value = myPlayerName;
+    document.getElementById('player-name-input').onchange = (e) => {
+      myPlayerName = e.target.value.trim() || "Trainer";
+      localStorage.setItem("poke_name", myPlayerName);
+    };
+
+    function initColorPicker() {
+      const grid = document.getElementById('color-grid');
+      grid.innerHTML = '';
+
+      presetColors.forEach((color) => {
+        const swatch = document.createElement('div');
+        swatch.className = 'color-swatch' + (color.hex === selectedColor ? ' active' : '');
+        swatch.style.background = color.hex;
+        swatch.title = color.name;
+        swatch.onclick = () => {
+          document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+          swatch.classList.add('active');
+          selectedColor = color.hex;
+          localStorage.setItem("poke_color", selectedColor);
+          document.documentElement.style.setProperty('--my-color', selectedColor);
+        };
+        grid.appendChild(swatch);
+      });
+
+      document.documentElement.style.setProperty('--my-color', selectedColor);
+    }
+
+    initColorPicker();
+
+    /* AUDIO SYNTHESIZER */
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playSound(type) {
+      if (!soundEnabled) return;
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      if (type === 'deal') {
+        osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+      } else if (type === 'flip') {
+        osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+      } else if (type === 'clash') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(160, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(20, audioCtx.currentTime + 0.5);
+        gain.gain.setValueAtTime(0.8, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+      }
+    }
+
+    let peer = null, conn = null, isHost = false;
+    let myHand = [];
+    let myScore = 0, oppScore = 0, currentFightIndex = 0;
+    let maxFights = 4; // Erster Durchgang hat 4 Fights, danach 7 (mit 3 Bonus-Fights)
+    let isBonusPhase = false;
+
+    let myBoard = [];  // Array von maximal 4 gefüllten Karten-Objekten
+    let oppBoardCount = 0; // Wie viele Karten hat der Gegner ausgelegt
+    let oppBoardCards = []; // Erst nach Sync des Gegners gefüllt
+
+    let oppHandSize = 5;
+    let isEvaluating = false;
+
+    let currentAvatarIndex = parseInt(localStorage.getItem("poke_avatar")) || 1;
+    const maxAvatars = 7;
+    document.getElementById('avatar-preview-img').src = `trainer_${currentAvatarIndex}.png`;
+
+    const pokemonPool = [
+      { name: "Glumanda", atk: 1, img: "glumanda.png" },
+      { name: "Pichu", atk: 1, img: "pichu.png" },
+      { name: "Gengar", atk: 2, img: "gengar.png" },
+      { name: "Pikachu", atk: 2, img: "pikachu.png" },
+      { name: "Flamara", atk: 3, img: "flamara.png" },
+      { name: "Glaziola", atk: 3, img: "glaziola.png" },
+      { name: "Dragoran", atk: 4, img: "dragoran.png" },
+      { name: "Maskagato", atk: 4, img: "maskagato.png" },
+      { name: "Guardevoir", atk: 5, img: "guardevoir.png" },
+      { name: "Mew", atk: 5, img: "mew.png" }
+    ];
+
+    function cycleAvatar(direction) {
+      currentAvatarIndex += direction;
+      if (currentAvatarIndex > maxAvatars) currentAvatarIndex = 1;
+      if (currentAvatarIndex < 1) currentAvatarIndex = maxAvatars;
+
+      localStorage.setItem("poke_avatar", currentAvatarIndex);
+      document.getElementById('avatar-preview-img').src = `trainer_${currentAvatarIndex}.png`;
+    }
+
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+      }
+    }
+
+    function triggerShockwave(isLoss = false) {
+      const wave = document.getElementById('shockwave-effect');
+      wave.className = 'shockwave ' + (isLoss ? 'active-lose' : 'active-win');
+      setTimeout(() => { wave.className = 'shockwave'; }, 550);
+    }
+
+    function startCustomRoom() {
+      myPlayerName = document.getElementById('player-name-input').value.trim() || "Trainer";
+      localStorage.setItem("poke_name", myPlayerName);
+
+      const roomInput = document.getElementById('room-code').value.trim().toLowerCase();
+      if (!roomInput) return alert("Bitte gib einen Raumcode ein!");
+
+      const joinBtn = document.getElementById('join-btn');
+      joinBtn.disabled = true;
+      joinBtn.innerText = "Verbinde...";
+
+      const hostPeerId = "poke-room-" + roomInput;
+      peer = new Peer(hostPeerId);
+
+      peer.on('open', () => {
+        isHost = true;
+        peer.on('connection', connection => {
+          conn = connection;
+          setupConnection();
+        });
+      });
+
+      peer.on('error', err => {
+        if (err.type === 'unavailable-id') {
+          peer = new Peer();
+          peer.on('open', () => {
+            conn = peer.connect(hostPeerId);
+            isHost = false;
+            setupConnection();
+          });
+        } else {
+          alert("Fehler bei der Verbindung: " + err.type);
+          joinBtn.disabled = false;
+          joinBtn.innerText = "Spiel Betreten";
+        }
+      });
+    }
+
+    function setupConnection() {
+      conn.on('open', () => {
+        document.getElementById('lobby').style.display = 'none';
+        document.getElementById('game-over-modal').style.display = 'none';
+        document.getElementById('game').style.display = 'flex';
+
+        document.body.classList.add('in-game');
+
+        const myAvatar = `trainer_${currentAvatarIndex}.png`;
+        document.getElementById('my-avatar-img').src = myAvatar;
+        
+        conn.send({ 
+          type: 'PLAYER_INFO', 
+          avatar: myAvatar, 
+          color: selectedColor, 
+          name: myPlayerName 
+        });
+
+        if (isHost) startHostGame();
+      });
+
+      conn.on('data', data => handleMessage(data));
+    }
+
+    function clearBoardSlots() {
+      for (let i = 0; i < 4; i++) {
+        document.getElementById(`my-slot-${i}`).innerHTML = '';
+        document.getElementById(`opp-slot-${i}`).innerHTML = '';
+      }
+    }
+
+    function startHostGame() {
+      myScore = 0;
+      oppScore = 0;
+      currentFightIndex = 0;
+      maxFights = 4;
+      isBonusPhase = false;
+
+      myBoard = [];
+      oppBoardCount = 0;
+      oppBoardCards = [];
+      oppHandSize = 5;
+
+      clearBoardSlots();
+      updateScoreUI();
+
+      document.getElementById('game-over-modal').style.display = 'none';
+
+      let sorted = [...pokemonPool].sort((a, b) => a.atk - b.atk);
+      let p1 = [sorted[0], sorted[3], sorted[4], sorted[7], sorted[8]];
+      let p2 = [sorted[1], sorted[2], sorted[5], sorted[6], sorted[9]];
+      myHand = p1;
+      animateDealingCards();
+
+      const myAvatar = `trainer_${currentAvatarIndex}.png`;
+      conn.send({ 
+        type: 'START', 
+        hand: p2, 
+        avatar: myAvatar, 
+        color: selectedColor, 
+        name: myPlayerName 
+      });
+    }
+
+    function handleMessage(data) {
+      if (data.type === 'PLAYER_INFO') {
+        if (data.avatar) document.getElementById('opp-avatar-img').src = data.avatar;
+        if (data.color) document.documentElement.style.setProperty('--opp-color', data.color);
+        if (data.name) {
+          oppPlayerName = data.name;
+          updateScoreUI();
+        }
+      } else if (data.type === 'START') {
+        myScore = 0;
+        oppScore = 0;
+        currentFightIndex = 0;
+        maxFights = 4;
+        isBonusPhase = false;
+
+        myBoard = [];
+        oppBoardCount = 0;
+        oppBoardCards = [];
+        oppHandSize = 5;
+
+        clearBoardSlots();
+        if (data.avatar) document.getElementById('opp-avatar-img').src = data.avatar;
+        if (data.color) document.documentElement.style.setProperty('--opp-color', data.color);
+        if (data.name) oppPlayerName = data.name;
+        
+        updateScoreUI();
+        document.getElementById('game-over-modal').style.display = 'none';
+        myHand = data.hand;
+        animateDealingCards();
+      } else if (data.type === 'PLACE_CARD') {
+        // GEGNER HAT EINE KARTE AUF SEIN FELD GELEGT (SLOT INDEX = data.slotIndex)
+        oppHandSize = Math.max(0, oppHandSize - 1);
+        renderOppHand();
+
+        const slotEl = document.getElementById(`opp-slot-${data.slotIndex}`);
+        slotEl.innerHTML = createCardFlipHTML('backside.png', true, false);
+        playSound('deal');
+
+        oppBoardCount++;
+        checkIfBothReadyToClash();
+      } else if (data.type === 'SYNC_BOARD_CARDS') {
+        oppBoardCards = data.cards; // Array von Gegner-Karten für den Kampf
+        checkIfBothReadyToClash();
+      } else if (data.type === 'START_BONUS_PHASE') {
+        setupBonusPhase(data.cardsHost, data.cardsClient);
+      } else if (data.type === 'LEAVE') {
+        alert("Der Host hat das Spiel beendet.");
+        location.reload();
+      }
+    }
+
+    function animateDealingCards() {
+      document.getElementById('status').innerText = "Lege deine 4 Karten ab!";
+      const myContainer = document.getElementById('my-hand');
+      const oppContainer = document.getElementById('opp-hand');
+      myContainer.innerHTML = '';
+      oppContainer.innerHTML = '';
+
+      const total = myHand.length;
+
+      myHand.forEach((card, index) => {
+        setTimeout(() => {
+          playSound('deal');
+
+          const oppWrapper = document.createElement('div');
+          oppWrapper.className = 'fan-card-wrapper deal-from-center-opp';
+          const oppRot = (index - (total - 1) / 2) * -6;
+          oppWrapper.style.transform = `rotate(${oppRot}deg)`;
+          oppWrapper.style.zIndex = total - index;
+
+          const oppImg = document.createElement('img');
+          oppImg.src = 'backside.png';
+          oppImg.className = 'card-back';
+          oppWrapper.appendChild(oppImg);
+          oppContainer.appendChild(oppWrapper);
+
+          const myWrapper = document.createElement('div');
+          myWrapper.className = 'fan-card-wrapper deal-from-center-my';
+          const myRot = (index - (total - 1) / 2) * 6;
+          myWrapper.style.transform = `rotate(${myRot}deg)`;
+          myWrapper.style.zIndex = total - index;
+
+          const flipContainer = document.createElement('div');
+          flipContainer.className = 'hand-flip-container';
+
+          const flipInner = document.createElement('div');
+          flipInner.className = 'hand-flip-inner';
+
+          const backImg = document.createElement('img');
+          backImg.src = 'backside.png';
+          backImg.className = 'card-face card-face-back';
+
+          const frontImg = document.createElement('img');
+          frontImg.src = card.img;
+          frontImg.className = 'card-face card-face-front';
+
+          flipInner.appendChild(backImg);
+          flipInner.appendChild(frontImg);
+          flipContainer.appendChild(flipInner);
+          myWrapper.appendChild(flipContainer);
+          myContainer.appendChild(myWrapper);
+
+          setTimeout(() => {
+            flipInner.classList.add('flipped');
+            playSound('flip');
+          }, 350);
+
+          if (index === total - 1) {
+            setTimeout(() => {
+              renderHand();
+              renderOppHand();
+            }, 900);
+          }
+        }, index * 200);
+      });
+    }
+
+    /* PHYSIK & POINTER DRAGGING LOGIK */
+    function renderHand() {
+      const container = document.getElementById('my-hand');
+      container.innerHTML = '';
+      const total = myHand.length;
+
+      myHand.forEach((card, index) => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'fan-card-wrapper';
+        
+        const baseRot = (index - (total - 1) / 2) * 6; 
+        wrapper.style.transform = `rotate(${baseRot}deg)`;
+        wrapper.style.zIndex = total - index;
+
+        const img = document.createElement('img');
+        img.src = card.img;
+        img.className = 'card-img';
+
+        wrapper.appendChild(img);
+        container.appendChild(wrapper);
+
+        setupCardPhysics(wrapper, index, baseRot);
+      });
+    }
+
+    function setupCardPhysics(element, cardIndex, baseRot) {
+      let isDragging = false;
+      let startX = 0, startY = 0;
+      let currentX = 0, currentY = 0;
+      let lastX = 0, lastY = 0;
+      let velocityY = 0, velocityX = 0;
+
+      element.onpointerdown = (e) => {
+        if (isEvaluating || myBoard.length >= (isBonusPhase ? 3 : 4)) return;
+        isDragging = true;
+        element.classList.add('dragging');
+        element.setPointerCapture(e.pointerId);
+
+        startX = e.clientX;
+        startY = e.clientY;
+        lastX = e.clientX;
+        lastY = e.clientY;
+        currentX = 0;
+        currentY = 0;
+        velocityX = 0;
+        velocityY = 0;
+
+        document.getElementById('arena-bg').classList.add('drag-active');
+      };
+
+      element.onpointermove = (e) => {
+        if (!isDragging) return;
+
+        velocityX = e.clientX - lastX;
+        velocityY = e.clientY - lastY;
+        lastX = e.clientX;
+        lastY = e.clientY;
+
+        currentX = e.clientX - startX;
+        currentY = e.clientY - startY;
+
+        const tiltRot = baseRot + Math.sign(velocityX) * Math.min(12, Math.abs(velocityX) * 0.5);
+        element.style.transform = `translate3d(${currentX}px, ${currentY}px, 0px) rotate(${tiltRot}deg) scale(1.1)`;
+      };
+
+      element.onpointerup = (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        element.classList.remove('dragging');
+        element.releasePointerCapture(e.pointerId);
+        document.getElementById('arena-bg').classList.remove('drag-active');
+
+        const arenaRect = document.getElementById('arena-bg').getBoundingClientRect();
+        const cardRect = element.getBoundingClientRect();
+
+        const droppedInArena = cardRect.top < arenaRect.bottom && cardRect.bottom > arenaRect.top;
+        const flickedUp = velocityY < -6 && currentY < -40;
+
+        const targetLimit = isBonusPhase ? 3 : 4;
+
+        if ((droppedInArena || flickedUp) && myBoard.length < targetLimit && !isEvaluating) {
+          placeCardOnBoard(cardIndex);
+        } else {
+          element.style.transform = `rotate(${baseRot}deg)`;
+        }
+      };
+
+      element.onpointercancel = () => {
+        if (!isDragging) return;
+        isDragging = false;
+        element.classList.remove('dragging');
+        document.getElementById('arena-bg').classList.remove('drag-active');
+        element.style.transform = `rotate(${baseRot}deg)`;
+      };
+    }
+
+    function renderOppHand() {
+      const container = document.getElementById('opp-hand');
+      container.innerHTML = '';
+      for (let i = 0; i < oppHandSize; i++) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'fan-card-wrapper';
+        const rot = (i - (oppHandSize - 1) / 2) * -6;
+        wrapper.style.transform = `rotate(${rot}deg)`;
+        wrapper.style.zIndex = oppHandSize - i;
+
+        const img = document.createElement('img');
+        img.src = 'backside.png';
+        img.className = 'card-back';
+        wrapper.appendChild(img);
+        container.appendChild(wrapper);
+      }
+    }
+
+    function placeCardOnBoard(handIndex) {
+      const card = myHand[handIndex];
+      const slotIndex = myBoard.length;
+      myBoard.push(card);
+      myHand = myHand.filter((_, i) => i !== handIndex);
+      renderHand();
+
+      // LEG KARTEN IN MEINEN SLOT (MEINE KARTE IST FÜR MICH OFFEN GELEGT)
+      const slotEl = document.getElementById(`my-slot-${slotIndex}`);
+      slotEl.innerHTML = createCardFlipHTML(card.img, true, true);
+      playSound('deal');
+
+      const targetLimit = isBonusPhase ? 3 : 4;
+
+      if (conn && conn.open) {
+        conn.send({ type: 'PLACE_CARD', slotIndex: slotIndex });
+      }
+
+      if (myBoard.length === targetLimit) {
+        document.getElementById('status').innerText = "Warte auf Gegner...";
+        if (conn && conn.open) {
+          conn.send({ type: 'SYNC_BOARD_CARDS', cards: myBoard });
+        }
+      } else {
+        document.getElementById('status').innerText = `Lege Karte ${myBoard.length + 1} von ${targetLimit}`;
+      }
+
+      checkIfBothReadyToClash();
+    }
+
+    function createCardFlipHTML(frontImgSrc, animate = false, isFlipped = false) {
+      return `
+        <div class="flip-card-wrapper ${animate ? 'fly-to-arena' : ''}">
+          <div class="flip-card-inner ${isFlipped ? 'flipped' : ''}">
+            <img src="backside.png" class="card-face card-face-back">
+            <img src="${frontImgSrc}" class="card-face card-face-front">
+          </div>
+        </div>
+      `;
+    }
+
+    function updateScoreUI(popTarget = null) {
+      const myLabel = document.getElementById('my-score-label');
+      const oppLabel = document.getElementById('opp-score-label');
+      const roundBadge = document.getElementById('round-counter');
+
+      myLabel.innerText = `${myPlayerName} (${myScore})`;
+      oppLabel.innerText = `${oppPlayerName} (${oppScore})`;
+
+      const remainingFights = maxFights - currentFightIndex;
+      const myDiff = myScore - oppScore;
+      const oppDiff = oppScore - myScore;
+
+      let isMatchpoint = false;
+      if (myDiff > remainingFights || oppDiff > remainingFights || (currentFightIndex + 1 === maxFights)) {
+        isMatchpoint = true;
+      }
+
+      if (isMatchpoint) {
+        roundBadge.innerText = "MATCHPOINT!";
+        roundBadge.classList.add('matchpoint-badge');
+      } else {
+        roundBadge.innerText = `Kampf ${currentFightIndex + 1}/${maxFights}`;
+        roundBadge.classList.remove('matchpoint-badge');
+      }
+
+      if (popTarget === 'my') {
+        myLabel.classList.add('score-pop');
+        setTimeout(() => myLabel.classList.remove('score-pop'), 250);
+      } else if (popTarget === 'opp') {
+        oppLabel.classList.add('score-pop');
+        setTimeout(() => oppLabel.classList.remove('score-pop'), 250);
+      }
+    }
+
+    function checkIfBothReadyToClash() {
+      const targetLimit = isBonusPhase ? 3 : 4;
+      if (myBoard.length === targetLimit && oppBoardCount === targetLimit && oppBoardCards.length === targetLimit && !isEvaluating) {
+        isEvaluating = true;
+        startAutomatedClashes(0, targetLimit);
+      }
+    }
+
+    /* AUTOMATISCHE SERIE VON KÄMPFEN DER REIHE NACH */
+    function startAutomatedClashes(fightIdx, totalInPhase) {
+      if (fightIdx >= totalInPhase) {
+        // ENTWEDER BONUS RUNDE INITIATION ODER ENDE
+        if (!isBonusPhase) {
+          triggerBonusPhaseInitiation();
+        } else {
+          showMatchEndModal();
+        }
+        return;
+      }
+
+      const myCard = myBoard[fightIdx];
+      const oppCard = oppBoardCards[fightIdx];
+
+      const mySlot = document.getElementById(`my-slot-${fightIdx}`);
+      const oppSlot = document.getElementById(`opp-slot-${fightIdx}`);
+
+      mySlot.classList.add('active-clash');
+      oppSlot.classList.add('active-clash');
+
+      // NEU LADEN DER BILDER MIT BILDSEITE FÜR DEN GEGNER
+      oppSlot.innerHTML = createCardFlipHTML(oppCard.img, false, false);
+
+      document.getElementById('status').innerText = `Kampf ${currentFightIndex + 1}!`;
+
+      const myCardWrapper = mySlot.querySelector('.flip-card-wrapper');
+      const oppCardWrapper = oppSlot.querySelector('.flip-card-wrapper');
+      const myCardInner = mySlot.querySelector('.flip-card-inner');
+      const oppCardInner = oppSlot.querySelector('.flip-card-inner');
+
+      // SCHRITT 1: ANSTURM
+      setTimeout(() => {
+        if (myCardInner) myCardInner.classList.add('clash-my');
+        if (oppCardInner) oppCardInner.classList.add('clash-opp');
+      }, 400);
+
+      // SCHRITT 2: IMPACT REVEAL GEGNERKARTE
+      setTimeout(() => {
+        if (oppCardInner) oppCardInner.classList.add('flipped');
+        document.getElementById('body').classList.add('shake');
+        playSound('flip');
+        playSound('clash');
+      }, 860);
+
+      // SCHRITT 3: SCORE BEWERTEN
+      setTimeout(() => {
+        let popTarget = null;
+        if (myCard.atk > oppCard.atk) {
+          myScore++;
+          triggerShockwave(false);
+          popTarget = 'my';
+        } else if (oppCard.atk > myCard.atk) {
+          oppScore++;
+          triggerShockwave(true);
+          popTarget = 'opp';
+        } else {
+          triggerShockwave(false);
+        }
+
+        currentFightIndex++;
+        updateScoreUI(popTarget);
+      }, 1300);
+
+      // SCHRITT 4: EXIT & NÄCHSTER KAMPF
+      setTimeout(() => {
+        document.getElementById('body').classList.remove('shake');
+        mySlot.classList.remove('active-clash');
+        oppSlot.classList.remove('active-clash');
+
+        if (myCardWrapper) myCardWrapper.classList.add('exit-my-card');
+        if (oppCardWrapper) oppCardWrapper.classList.add('exit-opp-card');
+      }, 2400);
+
+      setTimeout(() => {
+        startAutomatedClashes(fightIdx + 1, totalInPhase);
+      }, 2900);
+    }
+
+    function triggerBonusPhaseInitiation() {
+      if (isHost) {
+        // HOST GENERIERT JE 2 NEUE KARTEN
+        const extraHost = [
+          pokemonPool[Math.floor(Math.random() * pokemonPool.length)],
+          pokemonPool[Math.floor(Math.random() * pokemonPool.length)]
+        ];
+        const extraClient = [
+          pokemonPool[Math.floor(Math.random() * pokemonPool.length)],
+          pokemonPool[Math.floor(Math.random() * pokemonPool.length)]
+        ];
+
+        conn.send({ type: 'START_BONUS_PHASE', cardsHost: extraHost, cardsClient: extraClient });
+        setupBonusPhase(extraHost, extraClient);
+      }
+    }
+
+    function setupBonusPhase(extraHost, extraClient) {
+      isBonusPhase = true;
+      maxFights = 7;
+
+      myBoard = [];
+      oppBoardCount = 0;
+      oppBoardCards = [];
+      clearBoardSlots();
+
+      const extras = isHost ? extraHost : extraClient;
+      myHand.push(...extras);
+      oppHandSize = 3; // 1 alte + 2 neue
+
+      renderHand();
+      renderOppHand();
+
+      const banner = document.getElementById('banner-overlay');
+      banner.innerText = "BONUS-RUNDE! (+2 KARTEN)";
+      banner.className = "show-info";
+
+      setTimeout(() => {
+        banner.className = "";
+        isEvaluating = false;
+        updateScoreUI();
+        document.getElementById('status').innerText = "Lege deine 3 verbleibenden Karten ab!";
+      }, 2000);
+    }
+
+    function showMatchEndModal() {
+      const modal = document.getElementById('game-over-modal');
+      const title = document.getElementById('end-title');
+      const desc = document.getElementById('end-desc');
+      const hostControls = document.getElementById('host-controls');
+      const clientWait = document.getElementById('client-wait');
+
+      let matchResult = 'DRAW';
+      if (myScore > oppScore) {
+        title.innerText = "DU HAST GEWONNEN! 🏆";
+        desc.innerText = `Endstand: ${myScore} zu ${oppScore}`;
+        matchResult = 'WIN';
+      } else if (oppScore > myScore) {
+        title.innerText = `${oppPlayerName.toUpperCase()} GEWINNT!`;
+        desc.innerText = `Endstand: ${myScore} zu ${oppScore}`;
+        matchResult = 'LOSS';
+      } else {
+        title.innerText = "UNENTSCHIEDEN!";
+        desc.innerText = `Endstand: ${myScore} zu ${oppScore}`;
+        matchResult = 'DRAW';
+      }
+
+      recordMatchResult(oppPlayerName, matchResult);
+
+      if (isHost) {
+        hostControls.style.display = "block";
+        clientWait.style.display = "none";
+      } else {
+        hostControls.style.display = "none";
+        clientWait.style.display = "block";
+      }
+
+      modal.style.display = "flex";
+    }
+
+    function restartMatch() {
+      if (isHost) {
+        startHostGame();
+      }
+    }
+
+    function leaveToLobby() {
+      if (conn) {
+        conn.send({ type: 'LEAVE' });
+      }
+      location.reload();
+    }
+  </script>
+</body>
+</html>
